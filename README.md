@@ -56,18 +56,6 @@ helm upgrade loki grafana/loki \
   --atomic
 
 kubectl port-forward --namespace monitoring svc/loki 8050:3100
-
-curl \
-  --header "Content-Type: application/json" \
-  --request POST \
-  --silent \
-  localhost:8050/loki/api/v1/push \
-  --data-raw "{\"streams\": [{\"stream\": {\"job\": \"test\"}, \"values\": [[\"$(date +%s)000000000\", \"foobar\"]]}]}"
-
-curl localhost:8050/loki/api/v1/query_range \
-  --data-urlencode 'query={job="test"}' \
-  | jq --color-output \
-  | less
 ```
 
 ## Vector
@@ -92,23 +80,36 @@ helm upgrade vector vector/vector \
 
 kubectl port-forward --namespace vector svc/vector 8060:8686
 
+# Anzeige von Topologie und Metriken
 vector top --url http://localhost:8060/graphql
+
+# Beobachtung der Ausgabeprotokollereignisse von Quell- oder Transformationskomponenten.
 vector tap --url http://localhost:8060/graphql
 ```
 
 ### Test
 
-``` shell
-curl localhost:8050/loki/api/v1/query_range \
-  --data-urlencode 'query={forwarder="vector"}' \
-  | jq --color-output \
-  | less
-```
+- Auslesen der Kubernetes-Logs von Vector aus Loki.
+
+  ``` shell
+  curl localhost:8050/loki/api/v1/query_range \
+    --data-urlencode 'query={forwarder="vector"}' \
+    | jq --color-output \
+    | less
+  ```
 
 ### API
 
-- <http://localhost:8060/graphql>
-- <http://localhost:8060/playground>
+- GraphQL: <http://localhost:8060/graphql>
+- Playground: <http://localhost:8060/playground>
+
+### CLI
+
+- <https://vector.dev/docs/setup/installation/>
+
+  ``` shell
+  curl --proto '=https' --tlsv1.2 -sSfL https://sh.vector.dev | bash
+  ```
 
 ### Unit Tests
 
@@ -125,13 +126,17 @@ vector generate 'kubernetes_logs/remap,filter/loki'
 
 ### Vector Remap Language (VRL)
 
-``` shell
-vector vrl --input vector/cli-vrl-example.json
-```
+- Starte VRL-Shell zur Ausführung von Funktionen auf Beispiel-Input.
 
-``` shell
-.
-del(.file)
-.
-parse_json!(.message)
-```
+  ``` shell
+  vector vrl --input vector/cli-vrl-example.json
+  ```
+
+- Experimentiere mit Kontext des Beispiel-Inputs.
+
+  ``` shell
+  .
+  del(.file)
+  .
+  parse_json!(.message)
+  ```
