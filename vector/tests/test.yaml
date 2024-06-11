@@ -1,0 +1,29 @@
+tests:
+  - name: Multiple chained remap transforms
+
+    inputs:
+      - insert_at: add_metadata
+        type: log
+        log_fields:
+          message: image successfully uploaded
+          code: 202
+          username: exampleuser
+          email: user@example.com
+          transaction_id: bcef6a6a-2b72-4a9a-99a0-97ae89d82815
+
+    outputs:
+      - extract_from: sanitize
+        conditions:
+          - type: vrl
+            source: |-
+              assert!(is_timestamp(.timestamp))
+              assert!(is_string(.id))
+              assert_eq!(.tags.environment, "production", "incorrect environment tag")
+              assert!(!exists(.username))
+              assert!(!exists(.email))
+
+              valid_transaction_id = exists(.transaction_id) &&
+                is_string(.transaction_id) &&
+                length!(.transaction_id) == 36
+
+              assert!(valid_transaction_id, "transaction ID invalid")

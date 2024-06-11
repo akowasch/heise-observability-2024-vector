@@ -1,0 +1,23 @@
+sources:
+  web_backend:
+    type: docker_logs
+    docker_host: http://localhost:2375
+    include_images:
+      - web_backend
+
+transforms:
+  add_metadata:
+    type: remap
+    inputs:
+      - web_backend
+    source: |-
+      .timestamp = now()
+      .id = uuid_v4()
+      .tags.environment = "production"
+  sanitize:
+    type: remap
+    inputs:
+      - add_metadata
+    source: |-
+      del(.username)
+      del(.email)

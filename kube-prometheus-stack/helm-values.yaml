@@ -1,0 +1,31 @@
+# https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
+
+prometheus:
+  prometheusSpec:
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+
+# https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
+
+grafana:
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki.monitoring:3100
+      access: proxy
+  grafana.ini:
+    auth:
+      disable_login_form: true
+      disable_signout_menu: true
+    auth.anonymous:
+      enabled: true
+      org_role: Admin
+  sidecar:
+    dashboards:
+      searchNamespace: ALL
+    datasources:
+      searchNamespace: ALL

@@ -1,0 +1,83 @@
+# https://github.com/vectordotdev/helm-charts/blob/develop/charts/vector/values.yaml
+
+role: Agent # Agent, Aggregator, Stateless-Aggregator
+
+podMonitor:
+  enabled: true
+
+customConfig:
+  data_dir: /vector-data-dir
+  api:
+    enabled: true
+    address: 0.0.0.0:8686
+
+  sources:
+    internal_metrics:
+      type: internal_metrics
+
+    internal_logs:
+      type: internal_logs
+
+    host_metrics:
+      type: host_metrics
+
+    kubernetes_logs:
+      type: kubernetes_logs
+
+  # transforms:
+  #   sort:
+  #     type: remap
+  #     inputs:
+  #       - kubernetes_logs
+  #     source: |-
+  #       .node = .kubernetes.pod_node_name
+  #       .namespace = .kubernetes.pod_namespace
+  #       .pod = .kubernetes.pod_name
+  #       .container = .kubernetes.container_name
+
+  sinks:
+    prom_exporter:
+      type: prometheus_exporter
+      inputs:
+        - internal_metrics
+        - host_metrics
+      address: 0.0.0.0:9598
+
+    loki:
+      type: loki
+      inputs:
+        - internal_logs
+        - kubernetes_logs
+      endpoint: http://loki.monitoring:3100
+      remove_timestamp: true
+      encoding:
+        codec: json
+        # only_fields:
+        #   - timestamp
+        #   - message
+        #   - stream
+        #   - namespace
+        #   - pod
+        #   - container
+      labels:
+        forwarder: vector
+        stream: |-
+          {{ print "{{ stream }}" }}
+        source_type: |-
+          {{ print "{{ source_type }}" }}
+        node: |-
+          {{ print "{{ kubernetes.pod_node_name }}" }}
+        namespace: |-
+          {{ print "{{ kubernetes.pod_namespace }}" }}
+        pod: |-
+          {{ print "{{ kubernetes.pod_name }}" }}
+        container: |-
+          {{ print "{{ kubernetes.container_name }}" }}
+      healthcheck: false
+
+    # stdout:
+    #   type: console
+    #   inputs:
+    #     - kubernetes_logs
+    #   encoding:
+    #     codec: json
